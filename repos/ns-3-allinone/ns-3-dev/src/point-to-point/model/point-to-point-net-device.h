@@ -62,7 +62,8 @@ class ErrorModel;
 class PointToPointNetDevice : public NetDevice
 {
 public:
-  void CompressIf(bool flag);
+  void EnableCompression(bool flag);
+  void EnableDeCompression(bool flag);
   /**
    * \brief Get the TypeId
    *
@@ -201,9 +202,13 @@ protected:
 
 private:
   /**
-   *
+   * To check if compression is enabled or not
    */
   bool compressionEnabled = false;
+  /**
+   * To check if decompression iis enabled or not
+   */
+  bool deCompressionEnabled = false;
   /**
    * \brief Assign operator
    *
@@ -229,6 +234,15 @@ private:
   virtual void DoDispose (void);
 
 private:
+  /**
+   * Compress packets
+   */
+  Ptr<Packet> Compress (Ptr<Packet> p);
+
+  /**
+   * UnCompress packets
+   */
+  Ptr<Packet> UnCompress (Ptr<Packet> p);
 
   /**
    * \returns the address of the remote device connected to this device

@@ -61,6 +61,9 @@ PppHeader::Print (std::ostream &os) const
 
   switch(m_protocol)
     {
+  	case 0x4021:
+  		proto = "IP (0x4021)";
+  		break;
     case 0x0021: /* IPv4 */
       proto = "IP (0x0021)";
       break;

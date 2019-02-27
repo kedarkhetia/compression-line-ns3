@@ -18,6 +18,7 @@
  #include "ns3/flow-monitor-helper.h"
  #include "ns3/ipv4-global-routing-helper.h"
  #include "ns3/queue.h"
+ #include "ns3/packet.h"
 
 using namespace std;
 using namespace ns3;
@@ -31,7 +32,8 @@ using namespace ns3;
 	 Time::SetResolution (Time::MS);
 	 LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
 	 LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
-
+	 Packet packet;
+	 packet.EnablePrinting();
 	 NodeContainer nodes;
 	 nodes.Create (4);
 
@@ -63,9 +65,9 @@ using namespace ns3;
 	 PointerValue ptr;
 
 	 Ptr<PointToPointNetDevice> net0 = DynamicCast<PointToPointNetDevice>(devices.Get(0));
-	 net0->CompressIf(true);
+	 net0->EnableCompression(true);
 	 Ptr<PointToPointNetDevice> net1 = DynamicCast<PointToPointNetDevice>(devices.Get(1));
-	 net1->CompressIf(true);
+	 net1->EnableDeCompression(true);
 
 	 devices = p2p3.Install (nodes.Get(2), nodes.Get(3));
 	 address.SetBase ("10.1.3.0", "255.255.255.0");
