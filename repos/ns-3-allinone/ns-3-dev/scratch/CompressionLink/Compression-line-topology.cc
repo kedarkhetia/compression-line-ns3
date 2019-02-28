@@ -54,16 +54,22 @@ using namespace ns3;
 
 	 Ipv4AddressHelper address;
 	 NetDeviceContainer devices;
+	 AsciiTraceHelper ascii;
 
 	 devices = p0p1.Install (nodes.Get(0), nodes.Get(1));
 	 address.SetBase ("10.1.1.0", "255.255.255.0");
 	 Ipv4InterfaceContainer interface1 = address.Assign (devices);
+	 p0p1.EnableAsciiAll (ascii.CreateFileStream ("myfirst.tr"));
+	 p0p1.EnablePcap("fristone", devices.Get(0), false);
 
 	 devices = p1p2.Install (nodes.Get(1), nodes.Get(2));
 	 address.SetBase ("10.1.2.0", "255.255.255.0");
 	 Ipv4InterfaceContainer interface2 = address.Assign (devices);
-	 PointerValue ptr;
+	 p1p2.EnableAsciiAll (ascii.CreateFileStream ("mysecond.tr"));
+	 p1p2.EnablePcap("secondone",devices.Get(0), false);
+	 p1p2.EnablePcap("thirdone",devices.Get(1), false);
 
+	 PointerValue ptr;
 	 Ptr<PointToPointNetDevice> net0 = DynamicCast<PointToPointNetDevice>(devices.Get(0));
 	 net0->EnableCompression(true);
 	 Ptr<PointToPointNetDevice> net1 = DynamicCast<PointToPointNetDevice>(devices.Get(1));
@@ -72,7 +78,9 @@ using namespace ns3;
 	 devices = p2p3.Install (nodes.Get(2), nodes.Get(3));
 	 address.SetBase ("10.1.3.0", "255.255.255.0");
 	 Ipv4InterfaceContainer interface3 = address.Assign (devices);
-
+	 p2p3.EnableAsciiAll(ascii.CreateFileStream("mythird.tr"));
+	 //p2p3.EnablePcap("thirdone");
+	 p2p3.EnablePcap("fourthone", devices.Get(0), false);
 	 Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
 	 uint16_t port = 4000;
@@ -91,7 +99,6 @@ using namespace ns3;
 	 apps = client.Install (nodes.Get (0));
 	 apps.Start (Seconds (2.0));
 	 apps.Stop (Seconds (10.0));
-
 	 Simulator::Run ();
 	 Simulator::Destroy ();
 	 return 0;
