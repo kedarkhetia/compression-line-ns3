@@ -25,6 +25,9 @@
 #include "ns3/trace-source-accessor.h"
 #include "ns3/uinteger.h"
 #include "ns3/pointer.h"
+#include "ns3/tag.h"
+#include "ns3/packet.h"
+#include "ns3/uinteger.h"
 #include "point-to-point-net-device.h"
 #include "point-to-point-channel.h"
 #include "ppp-header.h"
@@ -40,6 +43,86 @@ namespace ns3 {
 NS_LOG_COMPONENT_DEFINE ("PointToPointNetDevice");
 
 NS_OBJECT_ENSURE_REGISTERED (PointToPointNetDevice);
+
+class SizeTag : public Tag
+{
+public:
+  /**
+   * \brief Get the type ID.
+   * \return the object TypeId
+   */
+  static TypeId GetTypeId (void);
+  virtual TypeId GetInstanceTypeId (void) const;
+  virtual uint32_t GetSerializedSize (void) const;
+  virtual void Serialize (TagBuffer i) const;
+  virtual void Deserialize (TagBuffer i);
+  virtual void Print (std::ostream &os) const;
+
+  // these are our accessors to our tag structure
+  /**
+   * Set the tag value
+   * \param value The tag value.
+   */
+  void SetValue (uint32_t value);
+  /**
+   * Get the tag value
+   * \return the tag value.
+   */
+  uint32_t GetValue (void) const;
+private:
+  uint32_t m_simpleValue;  //!< tag value
+};
+
+
+TypeId
+SizeTag::GetTypeId (void)
+{
+  static TypeId tid = TypeId ("ns3::MyTag")
+    .SetParent<Tag> ()
+    .AddConstructor<SizeTag> ()
+    .AddAttribute ("SimpleValue",
+                   "A simple value",
+                   EmptyAttributeValue (),
+                   MakeUintegerAccessor (&SizeTag::GetValue),
+                   MakeUintegerChecker<uint32_t> ())
+  ;
+  return tid;
+}
+TypeId
+SizeTag::GetInstanceTypeId (void) const
+{
+  return GetTypeId ();
+}
+uint32_t
+SizeTag::GetSerializedSize (void) const
+{
+  return 1;
+}
+void
+SizeTag::Serialize (TagBuffer i) const
+{
+  i.WriteU32 (m_simpleValue);
+}
+void
+SizeTag::Deserialize (TagBuffer i)
+{
+  m_simpleValue = i.ReadU32 ();
+}
+void
+SizeTag::Print (std::ostream &os) const
+{
+  os << "v=" << (uint32_t)m_simpleValue;
+}
+void
+SizeTag::SetValue (uint32_t value)
+{
+  m_simpleValue = value;
+}
+uint32_t
+SizeTag::GetValue (void) const
+{
+  return m_simpleValue;
+}
 
 TypeId 
 PointToPointNetDevice::GetTypeId (void)
@@ -352,33 +435,23 @@ PointToPointNetDevice::SetReceiveErrorModel (Ptr<ErrorModel> em)
 Ptr<Packet>
 PointToPointNetDevice::UnCompress (Ptr<Packet> p)
 {
-	//cout << "Packet: " << p->ToString() << " \n";
-		uint8_t *buffer = new uint8_t[p->GetSize ()];
-		p->CopyData(buffer, p->GetSize ());
-		string s = string(buffer, buffer+p->GetSize ());
-		//cout << "Blanka: " << s << "\n";
-		z_stream infstream;
-		infstream.zalloc = Z_NULL;
-		infstream.zfree = Z_NULL;
-		infstream.opaque = Z_NULL;
-		// setup "b" as the input and "c" as the compressed output
-		infstream.avail_in = (uInt)p->GetSize (); // size of input
-		infstream.next_in = (Bytef *)buffer; // input char array
-		uint8_t out[284];
-		infstream.avail_out = (uInt)sizeof(out); // size of output
-		infstream.next_out = (Bytef *)out; // output char array
-		//s = string(out, out+56);
-		// the actual DE-compression work.
-		inflateInit(&infstream);
-		inflate(&infstream, Z_NO_FLUSH);
-		inflateEnd(&infstream);
-		//uint16_t protocol;
-		//p = Create<Packet> ((uint8_t*) out, p->GetSize());
-		p = Create<Packet> ((uint8_t*) out, 284, true);
-		p->CopyData(buffer, p->GetSize ());
-		s = string(buffer, buffer+p->GetSize ());
-		//cout << "Uncompresed Blanka: " << s << "\n";
-		return p;
+	uint8_t *buffer = new uint8_t[p->GetSize ()];
+	p->CopyData(buffer, p->GetSize ());
+	z_stream infstream;
+	infstream.zalloc = Z_NULL;
+	infstream.zfree = Z_NULL;
+	infstream.opaque = Z_NULL;
+	infstream.avail_in = (uInt)p->GetSize (); // size of input
+	infstream.next_in = (Bytef *)buffer; // input char array
+	uint8_t out[p->GetSize()];
+	infstream.avail_out = (uInt)sizeof(out); // size of output
+	infstream.next_out = (Bytef *)out; // output char array
+	inflateInit(&infstream);
+	inflate(&infstream, Z_NO_FLUSH);
+	inflateEnd(&infstream);
+	p = Create<Packet> ((uint8_t*) out, p->GetSize(), true);
+	p->CopyData(buffer, p->GetSize ());
+	return p;
 }
 
 void
@@ -566,33 +639,21 @@ PointToPointNetDevice::IsBridge (void) const
 
 Ptr<Packet>
 PointToPointNetDevice::Compress (Ptr<Packet> p) {
-	//uint16_t protocol;
-		//ProcessHeader (p,protocol);
-		//char* proto = (char) protocol;
-		//string stringPacket = strcat(protocol, " ") + p->ToString();
-		//cout << "Protocol: " << *proto << " \n";
 		uint8_t *buffer = new uint8_t[p->GetSerializedSize ()];
 		p->Serialize(buffer, p->GetSerializedSize ());
-		string s = string(buffer, buffer+p->GetSerializedSize ());
-		//cout << "Original Blanka: " << s << "\n";
 		z_stream defstream;
 		defstream.zalloc = Z_NULL;
 		defstream.zfree = Z_NULL;
 		defstream.opaque = Z_NULL;
-		// setup "a" as the input and "b" as the compressed output
 		defstream.avail_in = (uInt)p->GetSerializedSize (); // size of input, string + terminator
 		defstream.next_in = (Bytef *)buffer; // input char array
 		uint8_t out[p->GetSerializedSize ()];
 		defstream.avail_out = (uInt)p->GetSerializedSize (); // size of output
 		defstream.next_out = (Bytef *)out; // output char array
-
-		// the actual compression work.
 		deflateInit(&defstream, Z_BEST_COMPRESSION);
 		deflate(&defstream, Z_FINISH);
 		deflateEnd(&defstream);
-		//cout << p->GetSerializedSize ();
 		p = Create<Packet> ((uint8_t*) out, p->GetSerializedSize ());
-		//cout << "Packet: " << p->ToString() << " \n";
 		AddHeader(p, 0x4021);
 		return p;
 }
@@ -772,6 +833,5 @@ PointToPointNetDevice::EtherToPpp (uint16_t proto)
     }
   return 0;
 }
-
 
 } // namespace ns3

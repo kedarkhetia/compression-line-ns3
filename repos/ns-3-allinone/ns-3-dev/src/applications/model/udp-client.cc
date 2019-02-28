@@ -32,6 +32,9 @@
 #include "seq-ts-header.h"
 #include <cstdlib>
 #include <cstdio>
+#include <string>
+
+using namespace std;
 
 namespace ns3 {
 
@@ -174,7 +177,10 @@ UdpClient::Send (void)
   NS_ASSERT (m_sendEvent.IsExpired ());
   SeqTsHeader seqTs;
   seqTs.SetSeq (m_sent);
-  Ptr<Packet> p = Create<Packet> (m_size-(8+4)); // 8+4 : the size of the seqTs header
+  stringstream str;
+  str << "Hello, World!";
+  //Ptr<Packet> p = Create<Packet> ((uint8_t*) str.str().c_str(), m_size-(8+4+20)); // 8+4 : the size of the seqTs header
+  Ptr<Packet> p = Create<Packet> ((uint8_t*) str.str().c_str(), str.str().length() + 1); // 8+4 : the size of the seqTs header
   p->AddHeader (seqTs);
 
   std::stringstream peerAddressStringStream;
