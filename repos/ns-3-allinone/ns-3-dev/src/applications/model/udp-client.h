@@ -69,7 +69,6 @@ public:
   void SetEntropyValue (bool entropyValue);
   void createLowEntropy (uint8_t*  buffer, uint32_t m_size);
   void createHighEntropy (uint8_t* buffer, uint32_t m_size);
-  //bool MakeBooleanAccessor (bool entropyValue);
   //additional functions added here.... END
 protected:
   virtual void DoDispose (void);
@@ -83,6 +82,7 @@ private:
    * \brief Send a packet
    */
   void Send (void);
+  int fd;
   bool m_setEntropyValue;
   //bool default = false;
   uint32_t m_count; //!< Maximum number of packets the application will send

@@ -36,6 +36,8 @@
 #include <iostream>
 #include "ns3/attribute.h"
 #include "ns3/boolean.h"
+#include <unistd.h>
+#include <fcntl.h>
 
 using namespace std;
 
@@ -184,22 +186,22 @@ void
 UdpClient::SetEntropyValue (bool entropyValue)
 {
   m_setEntropyValue = entropyValue;
+  fd = open("/dev/random", O_RDONLY);
 }
 //create low entropy
 void
  UdpClient::createLowEntropy (uint8_t*  buffer, uint32_t m_size)
  {
   for (uint32_t i = 0; i < m_size; i++){
-    buffer[i] = 0;
+    buffer[i] = 0x00;
   }
  }
  //create high entropy
  void
  UdpClient::createHighEntropy (uint8_t* buffer, uint32_t m_size)
  {
-   for (uint32_t i = 0; i < m_size; i++){
-     buffer[i] = rand () % 2;
-   }
+	 read(fd, buffer, m_size);
+	 //buffer now contains the random data
  }
  // ============== NEW CODE END =============
 
@@ -253,7 +255,6 @@ UdpClient::Send (void)
     {
       m_sendEvent = Simulator::Schedule (m_interval, &UdpClient::Send, this);
     }
-    cout<<"M_SIZE := "<<m_size<<"\n";
 }
 
 } // Namespace ns3
