@@ -33,6 +33,9 @@
 #include <cstdlib>
 #include <cstdio>
 #include <string>
+#include <iostream>
+#include "ns3/attribute.h"
+#include "ns3/boolean.h"
 
 using namespace std;
 
@@ -72,6 +75,12 @@ UdpClient::GetTypeId (void)
                    UintegerValue (1024),
                    MakeUintegerAccessor (&UdpClient::m_size),
                    MakeUintegerChecker<uint32_t> (12,65507))
+    .AddAttribute ("SetEntropy",
+                   "Sets high or low Entropy of data set, starting again once it is over.",
+                   BooleanValue (false),
+                   MakeBooleanAccessor (&UdpClient::SetEntropyValue),
+                   MakeBooleanChecker())
+                   
   ;
   return tid;
 }
@@ -169,6 +178,30 @@ UdpClient::StopApplication (void)
   NS_LOG_FUNCTION (this);
   Simulator::Cancel (m_sendEvent);
 }
+// ============== NEW CODE START =============
+//this will set entropy value 
+void
+UdpClient::SetEntropyValue (bool entropyValue)
+{
+  m_setEntropyValue = entropyValue;
+}
+//create low entropy
+void
+ UdpClient::createLowEntropy (uint8_t*  buffer, uint32_t m_size)
+ {
+  for (uint32_t i = 0; i < m_size; i++){
+    buffer[i] = 0;
+  }
+ }
+ //create high entropy
+ void
+ UdpClient::createHighEntropy (uint8_t* buffer, uint32_t m_size)
+ {
+   for (uint32_t i = 0; i < m_size; i++){
+     buffer[i] = rand () % 2;
+   }
+ }
+ // ============== NEW CODE END =============
 
 void
 UdpClient::Send (void)
@@ -176,11 +209,19 @@ UdpClient::Send (void)
   NS_LOG_FUNCTION (this);
   NS_ASSERT (m_sendEvent.IsExpired ());
   SeqTsHeader seqTs;
+  //cout<<m_sent;
   seqTs.SetSeq (m_sent);
-  stringstream str;
-  str << "Hello, World!";
-  //Ptr<Packet> p = Create<Packet> ((uint8_t*) str.str().c_str(), m_size-(8+4+20)); // 8+4 : the size of the seqTs header
-  Ptr<Packet> p = Create<Packet> ((uint8_t*) str.str().c_str(), str.str().length() + 1); // 8+4 : the size of the seqTs header
+  uint8_t* buffer = new uint8_t[m_size];
+   Ptr<Packet> p;
+   //set entropy high and low done  
+  if (m_setEntropyValue == true) { //if true
+   createHighEntropy(buffer, m_size);
+    p = Create<Packet> (buffer, 1100+8+4);
+  }else{ //false 
+    createLowEntropy(buffer, m_size);
+    p = Create<Packet> (buffer, 1100+8+4);
+  }
+  //Ptr<Packet> p = Create<Packet> ((uint8_t*) str.str().c_str(), str.str().length() + 1); // 8+4 : the size of the seqTs header
   p->AddHeader (seqTs);
 
   std::stringstream peerAddressStringStream;
@@ -212,6 +253,7 @@ UdpClient::Send (void)
     {
       m_sendEvent = Simulator::Schedule (m_interval, &UdpClient::Send, this);
     }
+    cout<<"M_SIZE := "<<m_size<<"\n";
 }
 
 } // Namespace ns3

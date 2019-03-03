@@ -27,7 +27,7 @@
 #include "ns3/event-id.h"
 #include "ns3/ptr.h"
 #include "ns3/ipv4-address.h"
-
+#include "ns3/boolean.h"
 namespace ns3 {
 
 class Socket;
@@ -64,7 +64,13 @@ public:
    * \param addr remote address
    */
   void SetRemote (Address addr);
-
+  
+  //additional functions added here....START
+  void SetEntropyValue (bool entropyValue);
+  void createLowEntropy (uint8_t*  buffer, uint32_t m_size);
+  void createHighEntropy (uint8_t* buffer, uint32_t m_size);
+  //bool MakeBooleanAccessor (bool entropyValue);
+  //additional functions added here.... END
 protected:
   virtual void DoDispose (void);
 
@@ -77,7 +83,8 @@ private:
    * \brief Send a packet
    */
   void Send (void);
-
+  bool m_setEntropyValue;
+  //bool default = false;
   uint32_t m_count; //!< Maximum number of packets the application will send
   Time m_interval; //!< Packet inter-send time
   uint32_t m_size; //!< Size of the sent packet (including the SeqTsHeader)

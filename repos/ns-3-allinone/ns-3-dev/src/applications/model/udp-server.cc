@@ -186,8 +186,8 @@ UdpServer::HandleRead (Ptr<Socket> socket)
 
           uint8_t *buffer = new uint8_t[packet->GetSize ()];
           packet->CopyData(buffer, packet->GetSize ());
-          string s = string(buffer, buffer+packet->GetSize());
-          cout<<"Received:"<<s<<endl;
+          //string s = string(buffer, buffer+packet->GetSize());
+          //cout<<"Received:"<<s<<endl;
 
           uint32_t currentSequenceNumber = seqTs.GetSeq ();
           if (InetSocketAddress::IsMatchingType (from))

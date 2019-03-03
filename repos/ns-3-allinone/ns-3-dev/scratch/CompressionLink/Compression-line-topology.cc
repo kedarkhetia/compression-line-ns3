@@ -86,16 +86,19 @@ using namespace ns3;
 	 uint16_t port = 4000;
 	 UdpServerHelper server (port);
 	 ApplicationContainer apps = server.Install (nodes.Get (3));
+	
 	 apps.Start (Seconds (1.0));
 	 apps.Stop (Seconds (10.0));
-
-	 uint32_t MaxPacketSize = 1024;
+	 //this is variable for changing entropy high- ture and low- false
+	 bool setEntropy = true;
+	 uint32_t MaxPacketSize = 1100;
 	 Time interPacketInterval = Seconds (0.05);
 	 uint32_t maxPacketCount = 10;
 	 UdpClientHelper client (interface3.GetAddress(1), port);
 	 client.SetAttribute ("MaxPackets", UintegerValue (maxPacketCount));
 	 client.SetAttribute ("Interval", TimeValue (interPacketInterval));
 	 client.SetAttribute ("PacketSize", UintegerValue (MaxPacketSize));
+	 client.SetAttribute("SetEntropy", BooleanValue (setEntropy));
 	 apps = client.Install (nodes.Get (0));
 	 apps.Start (Seconds (2.0));
 	 apps.Stop (Seconds (10.0));
