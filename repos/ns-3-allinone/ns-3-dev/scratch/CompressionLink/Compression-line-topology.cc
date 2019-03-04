@@ -67,6 +67,7 @@ using namespace ns3;
 	 Ipv4InterfaceContainer interface2 = address.Assign (devices);
 	 p1p2.EnableAsciiAll (ascii.CreateFileStream ("mysecond.tr"));
 	 p1p2.EnablePcap("secondone",devices.Get(0), false);
+	 p1p2.EnablePcap("thirdone",devices.Get(1), false);
 
 	 PointerValue ptr;
 	 Ptr<PointToPointNetDevice> net0 = DynamicCast<PointToPointNetDevice>(devices.Get(0));
@@ -79,7 +80,6 @@ using namespace ns3;
 	 Ipv4InterfaceContainer interface3 = address.Assign (devices);
 	 p2p3.EnableAsciiAll(ascii.CreateFileStream("mythird.tr"));
 	 //p2p3.EnablePcap("thirdone");
-	 p1p2.EnablePcap("thirdone",devices.Get(0), false);
 	 p2p3.EnablePcap("fourthone", devices.Get(1), false);
 	 Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
@@ -88,12 +88,12 @@ using namespace ns3;
 	 ApplicationContainer apps = server.Install (nodes.Get (3));
 	
 	 apps.Start (Seconds (1.0));
-	 apps.Stop (Seconds (10.0));
+	 apps.Stop (Seconds (82.0));
 	 //this is variable for changing entropy high- ture and low- false
-	 bool setEntropy = true;
-	 uint32_t MaxPacketSize = 1100;
-	 Time interPacketInterval = Seconds (0.05);
-	 uint32_t maxPacketCount = 10;
+	 bool setEntropy = false;
+	 uint32_t MaxPacketSize = 1050;
+	 Time interPacketInterval = Seconds (0.01);
+	 uint32_t maxPacketCount = 6000;
 	 UdpClientHelper client (interface3.GetAddress(1), port);
 	 client.SetAttribute ("MaxPackets", UintegerValue (maxPacketCount));
 	 client.SetAttribute ("Interval", TimeValue (interPacketInterval));
@@ -101,7 +101,7 @@ using namespace ns3;
 	 client.SetAttribute("SetEntropy", BooleanValue (setEntropy));
 	 apps = client.Install (nodes.Get (0));
 	 apps.Start (Seconds (2.0));
-	 apps.Stop (Seconds (20.0));
+	 apps.Stop (Seconds (80.0));
 	 Simulator::Run ();
 	 Simulator::Destroy ();
 	 return 0;

@@ -237,7 +237,7 @@ private:
   /**
    * Compress packets
    */
-  Ptr<Packet> Compress (Ptr<Packet> p, uint16_t protocol);
+  Ptr<Packet> Compress (Ptr<Packet> p);
 
   /**
    * UnCompress packets

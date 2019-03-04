@@ -1,4 +1,4 @@
-/* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
+/* -- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -- */
 /*
  * Copyright (c) 2007, 2008 University of Washington
  *
@@ -438,32 +438,15 @@ PointToPointNetDevice::UnCompress (Ptr<Packet> p)
 	uint8_t *newBuffer = new uint8_t[p->GetSize ()];
 	p->CopyData(newBuffer, p->GetSize ());
 	uint32_t size = (((uint32_t) newBuffer[3] << 24) | ((uint32_t) newBuffer[2] << 16) | ((uint32_t) newBuffer[1] << 8) | newBuffer[0]);
-	uint32_t len = p->GetSize() - 4;
+	uint32_t len = size - 4;
 	uint8_t *buffer = new uint8_t[len];
 	for(uint32_t i=0; i<len; i++) {
 		buffer[i] = newBuffer[i+4];
 	}
-	z_stream infstream;
-	infstream.zalloc = Z_NULL;
-	infstream.zfree = Z_NULL;
-	infstream.opaque = Z_NULL;
-	infstream.avail_in = (uInt)p->GetSize(); // size of input
-	infstream.next_in = (Bytef *)buffer; // input char array
 	uint8_t out[size];
-	infstream.avail_out = (uInt)size; // size of output
-	infstream.next_out = (Bytef *)out; // output char array
-	inflateInit(&infstream);
-	inflate(&infstream, Z_NO_FLUSH);
-	inflateEnd(&infstream);
-	uint16_t protocol;
-	protocol = (((uint16_t) out[1] << 8) | out[0]);
-	cout << protocol << endl;
-	uint8_t *dataBuffer = new uint8_t[size];
-	for(uint32_t i=0; i<size-2; i++) {
-		dataBuffer[i] = out[i+2];
-	}
-	p = Create<Packet> ((uint8_t*) dataBuffer, size-2);
-	AddHeader (p, PppToEther(protocol));
+	uLong outSize = (uLong) size;
+	uncompress((Bytef *)out, &outSize, (Bytef *)buffer, len);
+	p = Create<Packet> ((uint8_t*) out, outSize, true);
 	return p;
 }
 
@@ -651,50 +634,29 @@ PointToPointNetDevice::IsBridge (void) const
 }
 
 Ptr<Packet>
-PointToPointNetDevice::Compress (Ptr<Packet> p, uint16_t protocol) {
-		uint8_t *dataBuffer = new uint8_t[p->GetSize ()];
-		p->CopyData(dataBuffer, p->GetSize ());
-		string packetData = string(dataBuffer, dataBuffer+p->GetSize());
-		uint8_t *protocolBuffer = new uint8_t[2];
-		protocolBuffer[0] = protocol & 0xff;
-		protocolBuffer[1] = protocol >> 8;
-		uint32_t size = p->GetSize()+2;
-		uint8_t *buffer = new uint8_t[size];
-		for(uint32_t i=0; i<size; i++) {
-			if(i < 2) {
-				buffer[i] = protocolBuffer[i];
-			} else {
-				buffer[i] = dataBuffer[i-2];
-			}
+PointToPointNetDevice::Compress (Ptr<Packet> p) {
+	uint32_t size = p->GetSerializedSize ();
+	uint8_t *buffer = new uint8_t[size];
+	p->Serialize(buffer, size);
+	uint8_t out[size];
+	uLong outSize = (uLong) size;
+	compress2((Bytef *)out, &outSize, (Bytef *)buffer, (uLong) size, Z_BEST_COMPRESSION);
+	uint8_t *originalSize = new uint8_t[4];
+	originalSize[0] = (size & 0x000000ff);
+	originalSize[1] = (size & 0x0000ff00) >> 8;
+	originalSize[2] = (size & 0x00ff0000) >> 16;
+	originalSize[3] = (size & 0xff000000) >> 24;
+	uint8_t *newBuffer = new uint8_t[outSize + 4];
+	for(uint32_t i=0; i<outSize+4; i++) {
+		if(i < 4) {
+			newBuffer[i] = originalSize[i];
+		} else {
+			newBuffer[i] = out[i-4];
 		}
-		z_stream defstream;
-		defstream.zalloc = Z_NULL;
-		defstream.zfree = Z_NULL;
-		defstream.opaque = Z_NULL;
-		defstream.avail_in = (uInt)size; // size of input, string + terminator
-		defstream.next_in = (Bytef *)buffer; // input char array
-		uint8_t out[size];
-		defstream.avail_out = (uInt)size; // size of output
-		defstream.next_out = (Bytef *)out; // output char array
-		deflateInit(&defstream, Z_BEST_COMPRESSION);
-		deflate(&defstream, Z_FINISH);
-		deflateEnd(&defstream);
-		uint32_t len = strlen((char *) out);
-		uint8_t *originalSize = new uint8_t[4];
-		originalSize[0] = (size & 0x000000ff);
-		originalSize[1] = (size & 0x0000ff00) >> 8;
-		originalSize[2] = (size & 0x00ff0000) >> 16;
-		originalSize[3] = (size & 0xff000000) >> 24;
-		uint8_t *newBuffer = new uint8_t[len + 4];
-		for(uint32_t i=0; i<len+4; i++) {
-			if(i < 4) {
-				newBuffer[i] = originalSize[i];
-			} else {
-				newBuffer[i] = out[i-4];
-			}
-		}
-		p = Create<Packet> ((uint8_t*) newBuffer, len+4);
-		return p;
+	}
+	p = Create<Packet> ((uint8_t*) newBuffer, outSize+4);
+	AddHeader(p, 0x4021);
+	return p;
 }
 
 bool
@@ -722,15 +684,12 @@ PointToPointNetDevice::Send (
   // shoving it out the door.
   //
 
-  if(compressionEnabled && EtherToPpp(protocolNumber) == 0x0021) {
-	  //cout << "Here" << " \n";
-	  uint16_t protocol = EtherToPpp(protocolNumber);
-	  packet = Compress (packet, protocol);
-	  AddHeader (packet, 0x4021);
-	  //cout << packet->ToString() << " \n";
-  } else {
-	  AddHeader (packet, protocolNumber);
-  }
+  AddHeader (packet, protocolNumber);
+    if(compressionEnabled && EtherToPpp(protocolNumber) == 0x0021) {
+  	  //cout << "Here" << " \n";
+  	  packet = Compress (packet);
+  	  //cout << packet->ToString() << " \n";
+    }
   //cout << "Not Here" << " \n";
   m_macTxTrace (packet);
 
