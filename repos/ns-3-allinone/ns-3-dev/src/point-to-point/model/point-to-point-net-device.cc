@@ -31,6 +31,8 @@
 #include "point-to-point-net-device.h"
 #include "point-to-point-channel.h"
 #include "ppp-header.h"
+#include "ns3/ipv4-header.h"
+#include "ns3/udp-header.h"
 #include "zlib.h"
 #include <string.h>
 #include <string>
@@ -435,19 +437,41 @@ PointToPointNetDevice::SetReceiveErrorModel (Ptr<ErrorModel> em)
 Ptr<Packet>
 PointToPointNetDevice::UnCompress (Ptr<Packet> p)
 {
-	uint8_t *newBuffer = new uint8_t[p->GetSize ()];
-	p->CopyData(newBuffer, p->GetSize ());
-	uint32_t size = (((uint32_t) newBuffer[3] << 24) | ((uint32_t) newBuffer[2] << 16) | ((uint32_t) newBuffer[1] << 8) | newBuffer[0]);
-	uint32_t len = size - 4;
-	uint8_t *buffer = new uint8_t[len];
-	for(uint32_t i=0; i<len; i++) {
-		buffer[i] = newBuffer[i+4];
-	}
-	uint8_t out[size];
-	uLong outSize = (uLong) size;
-	uncompress((Bytef *)out, &outSize, (Bytef *)buffer, len);
-	p = Create<Packet> ((uint8_t*) out, outSize, true);
-	return p;
+	int updHeaderSize = 8;
+	  // Remove IPv4 Header
+	  Ipv4Header ipv4Header;
+	  p->RemoveHeader(ipv4Header);
+	  int ipHeaderSize = ipv4Header.GetPayloadSize () - p->GetSize ();
+	  // Remove UDP Header
+	  UdpHeader udpHeader;
+	  p->RemoveHeader(udpHeader);
+
+		uint8_t *newBuffer = new uint8_t[p->GetSize ()];
+		p->CopyData(newBuffer, p->GetSize ());
+		uint32_t size = (((uint32_t) newBuffer[3] << 24) | ((uint32_t) newBuffer[2] << 16) | ((uint32_t) newBuffer[1] << 8) | newBuffer[0]);
+		uint32_t len = size - 4;
+		uint8_t *buffer = new uint8_t[len];
+		for(uint32_t i=0; i<len; i++) {
+			buffer[i] = newBuffer[i+4];
+		}
+		uint8_t out[size];
+		uLong outSize = (uLong) size;
+		uncompress((Bytef *)out, &outSize, (Bytef *)buffer, len);
+	  uint16_t protocol = (((uint16_t) out[0] << 8) | (uint16_t) out[1]);
+	  outSize -= 2;
+	  uint8_t *data = new uint8_t[outSize];
+	  for(uint32_t i=0; i<outSize; i++) {
+	    data[i] = out[i+2];
+	  }
+		p = Create<Packet> ((uint8_t*) data, outSize);
+	  outSize += updHeaderSize;
+	  udpHeader.ForcePayloadSize(outSize);
+	  p->AddHeader(udpHeader);
+	  outSize += ipHeaderSize;
+	  ipv4Header.SetPayloadSize(outSize);
+	  p->AddHeader(ipv4Header);
+	  AddHeader (p, PppToEther(protocol));
+	  return p;
 }
 
 void
@@ -635,28 +659,64 @@ PointToPointNetDevice::IsBridge (void) const
 
 Ptr<Packet>
 PointToPointNetDevice::Compress (Ptr<Packet> p) {
-	uint32_t size = p->GetSerializedSize ();
-	uint8_t *buffer = new uint8_t[size];
-	p->Serialize(buffer, size);
-	uint8_t out[size];
-	uLong outSize = (uLong) size;
-	compress2((Bytef *)out, &outSize, (Bytef *)buffer, (uLong) size, Z_BEST_COMPRESSION);
-	uint8_t *originalSize = new uint8_t[4];
-	originalSize[0] = (size & 0x000000ff);
-	originalSize[1] = (size & 0x0000ff00) >> 8;
-	originalSize[2] = (size & 0x00ff0000) >> 16;
-	originalSize[3] = (size & 0xff000000) >> 24;
-	uint8_t *newBuffer = new uint8_t[outSize + 4];
-	for(uint32_t i=0; i<outSize+4; i++) {
-		if(i < 4) {
-			newBuffer[i] = originalSize[i];
-		} else {
-			newBuffer[i] = out[i-4];
+	// Remove PPP Header
+	  PppHeader pppHeader;
+	  p->RemoveHeader(pppHeader);
+	  int updHeaderSize = 8;
+	  // Remove IPv4 Header
+	  Ipv4Header ipv4Header;
+	  p->RemoveHeader(ipv4Header);
+	  int ipHeaderSize = ipv4Header.GetPayloadSize () - p->GetSize ();
+	  // Remove UDP Header
+	  UdpHeader udpHeader;
+	  p->RemoveHeader(udpHeader);
+	  uint16_t protocolNumber = pppHeader.GetProtocol ();
+	  uint8_t *protocol = new uint8_t[2];
+	  protocol[0] = (protocolNumber & 0xff) >> 8;
+	  protocol[1] = protocolNumber;
+	  //uint16_t tempProtocol = (((uint16_t) protocol[0] << 8) | (uint16_t) protocol[1]);
+	  //cout << "\nProtocol: " <<tempProtocol << endl;
+		uint32_t size = p->GetSize ();
+		uint8_t *dataBuffer = new uint8_t[size];
+		p->CopyData(dataBuffer, size);
+	  size += 2;
+	  uint8_t *buffer = new uint8_t[size];
+	  for(uint32_t i=0; i<size; i++) {
+	    if(i < 2) {
+	      buffer[i] = protocol[i];
+	    } else {
+	      buffer[i] = dataBuffer[i-2];
+	    }
+	  }
+		uint8_t *out = new uint8_t[(uLong) size];
+		uLongf outSize = (uLongf) size;
+	  int res = compress2((uint8_t *)out, &outSize, (uint8_t *)buffer, (uLong) size, Z_BEST_COMPRESSION);
+	  if(res == Z_OK)
+	     cout << "\noutSize: " << outSize << endl;
+		uint8_t *originalSize = new uint8_t[4];
+		originalSize[0] = (size & 0x000000ff);
+		originalSize[1] = (size & 0x0000ff00) >> 8;
+		originalSize[2] = (size & 0x00ff0000) >> 16;
+		originalSize[3] = (size & 0xff000000) >> 24;
+	  outSize += 4;
+		uint8_t *newBuffer = new uint8_t[outSize];
+		for(uint32_t i=0; i<outSize; i++) {
+			if(i < 4) {
+				newBuffer[i] = originalSize[i];
+			} else {
+				newBuffer[i] = out[i-4];
+			}
 		}
-	}
-	p = Create<Packet> ((uint8_t*) newBuffer, outSize+4);
-	AddHeader(p, 0x4021);
-	return p;
+		p = Create<Packet> ((uint8_t*) newBuffer, outSize);
+	  outSize += updHeaderSize;
+	  udpHeader.ForcePayloadSize(outSize);
+	  p->AddHeader(udpHeader);
+	  outSize += ipHeaderSize;
+	  ipv4Header.SetPayloadSize(outSize);
+	  p->AddHeader(ipv4Header);
+		AddHeader(p, 0x4021);
+	  //cout << "\nNew Packet" << p->ToString() << endl;
+		return p;
 }
 
 bool
