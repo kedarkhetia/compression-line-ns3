@@ -99,20 +99,29 @@ using namespace ns3;
 	 ApplicationContainer apps = server.Install (nodes.Get (3));
 	
 	 apps.Start (Seconds (1.0));
-	 apps.Stop (Seconds (82.0));
+	 apps.Stop (Seconds (136.0));
 	 //this is variable for changing entropy high- ture and low- false
-	 bool setEntropy = false;
-	 uint32_t MaxPacketSize = 1050;
+	 uint32_t MaxPacketSize = 1100;
 	 Time interPacketInterval = Seconds (0.01);
 	 uint32_t maxPacketCount = 6000;
 	 UdpClientHelper client (interface3.GetAddress(1), port);
 	 client.SetAttribute ("MaxPackets", UintegerValue (maxPacketCount));
 	 client.SetAttribute ("Interval", TimeValue (interPacketInterval));
 	 client.SetAttribute ("PacketSize", UintegerValue (MaxPacketSize));
-	 client.SetAttribute("SetEntropy", BooleanValue (setEntropy));
+	 client.SetAttribute("SetEntropy", BooleanValue (false));
 	 apps = client.Install (nodes.Get (0));
 	 apps.Start (Seconds (2.0));
-	 apps.Stop (Seconds (80.0));
+	 apps.Stop (Seconds (65.0));
+
+         UdpClientHelper client2 (interface3.GetAddress(1), port);
+	 client2.SetAttribute ("MaxPackets", UintegerValue (maxPacketCount));
+	 client2.SetAttribute ("Interval", TimeValue (interPacketInterval));
+	 client2.SetAttribute ("PacketSize", UintegerValue (MaxPacketSize));
+	 client2.SetAttribute("SetEntropy", BooleanValue (true));
+	 apps = client2.Install (nodes.Get (0));
+	 apps.Start (Seconds (67.0));
+	 apps.Stop (Seconds (135.0));
+
 	 Simulator::Run ();
 	 Simulator::Destroy ();
 	 return 0;
