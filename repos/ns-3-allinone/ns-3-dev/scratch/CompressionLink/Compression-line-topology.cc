@@ -19,6 +19,7 @@
  #include "ns3/ipv4-global-routing-helper.h"
  #include "ns3/queue.h"
  #include "ns3/packet.h"
+ #include "ns3/config-store.h"
 
 using namespace std;
 using namespace ns3;
@@ -28,6 +29,16 @@ using namespace ns3;
  int 
  main (int argc, char *argv[])
  {
+
+         CommandLine cmd;
+	 string capacity = "";
+	 cmd.AddValue("capacity", "Middle Link Capacity", capacity);
+	 cmd.Parse (argc, argv);
+
+	 ConfigStore inputConfig;
+	 inputConfig.ConfigureDefaults ();
+	 Config::SetDefault ("ns3::PointToPointNetDevice::m_protocol", UintegerValue (0x0021));
+	 cmd.Parse (argc, argv);
 
 	 Time::SetResolution (Time::MS);
 	 LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
@@ -45,7 +56,7 @@ using namespace ns3;
 	 p0p1.SetChannelAttribute ("Delay", StringValue ("2ms"));
 
 	 PointToPointHelper p1p2;
-	 p1p2.SetDeviceAttribute ("DataRate", StringValue ("8Mbps"));
+	 p1p2.SetDeviceAttribute ("DataRate", StringValue (capacity));
 	 p1p2.SetChannelAttribute ("Delay", StringValue ("2ms"));
 
 	 PointToPointHelper p2p3;

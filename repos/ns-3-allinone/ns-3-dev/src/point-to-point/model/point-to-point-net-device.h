@@ -205,6 +205,8 @@ private:
    * To check if compression is enabled or not
    */
   bool compressionEnabled = false;
+
+  uint16_t m_protocol;
   /**
    * To check if decompression iis enabled or not
    */

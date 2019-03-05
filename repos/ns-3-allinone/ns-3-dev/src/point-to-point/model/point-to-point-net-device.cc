@@ -158,6 +158,11 @@ PointToPointNetDevice::GetTypeId (void)
                    TimeValue (Seconds (0.0)),
                    MakeTimeAccessor (&PointToPointNetDevice::m_tInterframeGap),
                    MakeTimeChecker ())
+    .AddAttribute("m_protocol",
+		  "A protocol number which when detected will be compressed by compression enabled p2p net device.",
+		  UintegerValue(0x0021),
+		  MakeUintegerAccessor (&PointToPointNetDevice::m_protocol),
+		  MakeUintegerChecker<uint16_t> ())
 
     //
     // Transmit queueing discipline for the device which includes its own set
