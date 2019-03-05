@@ -186,7 +186,6 @@ void
 UdpClient::SetEntropyValue (bool entropyValue)
 {
   m_setEntropyValue = entropyValue;
-  fd = open("/dev/random", O_RDONLY);
 }
 //create low entropy
 void
@@ -200,7 +199,8 @@ void
  void
  UdpClient::createHighEntropy (uint8_t* buffer, uint32_t m_size)
  {
-	 read(fd, buffer, m_size);
+	uint8_t randomData = open("/dev/random", O_RDONLY);
+  read(randomData, buffer, m_size);
 	 //buffer now contains the random data
  }
  // ============== NEW CODE END =============
