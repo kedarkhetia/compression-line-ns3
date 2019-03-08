@@ -165,6 +165,13 @@ UdpServer::StopApplication ()
     {
       m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
+  cout << "Port: " << m_port << " Delay: " << lastPacket-firstPacket << endl;
+}
+
+Time
+UdpServer::GetTimeDiff ()
+{
+	return lastPacket-firstPacket;
 }
 
 void
@@ -184,12 +191,16 @@ UdpServer::HandleRead (Ptr<Socket> socket)
           SeqTsHeader seqTs;
           packet->RemoveHeader (seqTs);
 
-          uint8_t *buffer = new uint8_t[packet->GetSize ()];
-          packet->CopyData(buffer, packet->GetSize ());
+          //uint8_t *buffer = new uint8_t[packet->GetSize ()];
+          //packet->CopyData(buffer, packet->GetSize ());
           //string s = string(buffer, buffer+packet->GetSize());
           //cout<<"Received:"<<s<<endl;
 
           uint32_t currentSequenceNumber = seqTs.GetSeq ();
+          if(currentSequenceNumber == 0) {
+        	  firstPacket = Simulator::Now ();
+          }
+          lastPacket = Simulator::Now ();
           if (InetSocketAddress::IsMatchingType (from))
             {
               NS_LOG_INFO ("TraceDelay: RX " << packet->GetSize () <<

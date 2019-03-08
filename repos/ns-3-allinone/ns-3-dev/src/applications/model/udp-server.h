@@ -29,7 +29,8 @@
 #include "ns3/address.h"
 #include "ns3/traced-callback.h"
 #include "packet-loss-counter.h"
-
+#include "time.h"
+#include "ns3/simulator.h"
 namespace ns3 {
 /**
  * \ingroup applications
@@ -80,6 +81,7 @@ public:
    *  be a multiple of 8
    */
   void SetPacketWindowSize (uint16_t size);
+  Time GetTimeDiff ();
 protected:
   virtual void DoDispose (void);
 
@@ -102,6 +104,9 @@ private:
   Ptr<Socket> m_socket6; //!< IPv6 Socket
   uint64_t m_received; //!< Number of received packets
   PacketLossCounter m_lossCounter; //!< Lost packet counter
+
+  Time firstPacket = Simulator::Now ();
+  Time lastPacket = Simulator::Now ();
 
   /// Callbacks for tracing the packet Rx events
   TracedCallback<Ptr<const Packet> > m_rxTrace;

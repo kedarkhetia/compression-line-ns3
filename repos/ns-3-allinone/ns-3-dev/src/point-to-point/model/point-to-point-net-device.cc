@@ -695,9 +695,7 @@ PointToPointNetDevice::Compress (Ptr<Packet> p) {
 	  }
 		uint8_t *out = new uint8_t[compressBound(size)];
 		uLongf outSize = compressBound(size);
-	  int res = compress2((uint8_t *)out, &outSize, (uint8_t *)buffer, (uLong) size, Z_BEST_COMPRESSION);
-	  if(res == Z_OK)
-	     cout << "\noutSize: " << outSize << endl;
+	  compress2((uint8_t *)out, &outSize, (uint8_t *)buffer, (uLong) size, Z_BEST_COMPRESSION);
 		uint8_t *originalSize = new uint8_t[4];
 		originalSize[0] = (size & 0x000000ff);
 		originalSize[1] = (size & 0x0000ff00) >> 8;

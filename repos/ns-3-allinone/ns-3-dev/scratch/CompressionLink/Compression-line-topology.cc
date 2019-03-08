@@ -30,7 +30,7 @@ using namespace ns3;
  main (int argc, char *argv[])
  {
 
-         CommandLine cmd;
+     CommandLine cmd;
 	 string capacity = "";
 	 cmd.AddValue("capacity", "Middle Link Capacity", capacity);
 	 cmd.Parse (argc, argv);
@@ -41,8 +41,8 @@ using namespace ns3;
 	 cmd.Parse (argc, argv);
 
 	 Time::SetResolution (Time::MS);
-	 LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
-	 LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
+	 //LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
+	 //LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
 	 Packet packet;
 	 packet.EnablePrinting();
 	 NodeContainer nodes;
@@ -82,9 +82,9 @@ using namespace ns3;
 
 	 PointerValue ptr;
 	 Ptr<PointToPointNetDevice> net0 = DynamicCast<PointToPointNetDevice>(devices.Get(0));
-	 net0->EnableCompression(true);
+	 net0->EnableCompression(false);
 	 Ptr<PointToPointNetDevice> net1 = DynamicCast<PointToPointNetDevice>(devices.Get(1));
-	 net1->EnableDeCompression(true);
+	 net1->EnableDeCompression(false);
 
 	 devices = p2p3.Install (nodes.Get(2), nodes.Get(3));
 	 address.SetBase ("10.1.3.0", "255.255.255.0");
@@ -94,17 +94,15 @@ using namespace ns3;
 	 p2p3.EnablePcap("fourthone", devices.Get(1), false);
 	 Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
-	 uint16_t port = 4000;
-	 UdpServerHelper server (port);
+	 UdpServerHelper server (4000);
 	 ApplicationContainer apps = server.Install (nodes.Get (3));
-	
 	 apps.Start (Seconds (1.0));
-	 apps.Stop (Seconds (136.0));
+	 apps.Stop (Seconds (65.0));
 	 //this is variable for changing entropy high- ture and low- false
 	 uint32_t MaxPacketSize = 1100;
-	 Time interPacketInterval = Seconds (0.01);
+	 Time interPacketInterval = Seconds (0.1);
 	 uint32_t maxPacketCount = 6000;
-	 UdpClientHelper client (interface3.GetAddress(1), port);
+	 UdpClientHelper client (interface3.GetAddress(1), 4000);
 	 client.SetAttribute ("MaxPackets", UintegerValue (maxPacketCount));
 	 client.SetAttribute ("Interval", TimeValue (interPacketInterval));
 	 client.SetAttribute ("PacketSize", UintegerValue (MaxPacketSize));
@@ -112,16 +110,27 @@ using namespace ns3;
 	 apps = client.Install (nodes.Get (0));
 	 apps.Start (Seconds (2.0));
 	 apps.Stop (Seconds (65.0));
-
-         UdpClientHelper client2 (interface3.GetAddress(1), port);
+//	 Ptr<UdpServer> udpServer = server.GetServer();
+//	 Time delay = udpServer->GetTimeDiff();
+//	 cout << "Delay Low Entropy: " << delay << endl;
+//	 apps.Start (Seconds (2.0));
+//	 apps.Stop (Seconds (10.0));
+	 UdpServerHelper server2 (6000);
+	 apps = server2.Install (nodes.Get (3));
+	 apps.Start (Seconds (67.0));
+	 apps.Stop (Seconds (130.0));
+     UdpClientHelper client2 (interface3.GetAddress(1), 6000);
 	 client2.SetAttribute ("MaxPackets", UintegerValue (maxPacketCount));
 	 client2.SetAttribute ("Interval", TimeValue (interPacketInterval));
 	 client2.SetAttribute ("PacketSize", UintegerValue (MaxPacketSize));
 	 client2.SetAttribute("SetEntropy", BooleanValue (true));
 	 apps = client2.Install (nodes.Get (0));
-	 apps.Start (Seconds (67.0));
-	 apps.Stop (Seconds (135.0));
-
+	 apps.Start (Seconds (68.0));
+	 apps.Stop (Seconds (130.0));
+//	 delay = udpServer->GetTimeDiff();
+//	 cout << "Delay High Entropy: " << delay << endl;
+//	 apps.Start (Seconds (11.0));
+//	 apps.Stop (Seconds (20.0));
 	 Simulator::Run ();
 	 Simulator::Destroy ();
 	 return 0;
