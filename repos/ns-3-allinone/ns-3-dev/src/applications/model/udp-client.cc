@@ -186,6 +186,7 @@ void
 UdpClient::SetEntropyValue (bool entropyValue)
 {
   m_setEntropyValue = entropyValue;
+  fd = open("byteData", O_RDONLY);
 }
 //create low entropy
 void
@@ -199,8 +200,7 @@ void
  void
  UdpClient::createHighEntropy (uint8_t* buffer, uint32_t m_size)
  {
-	uint8_t randomData = open("/dev/random", O_RDONLY);
-  read(randomData, buffer, m_size);
+	read(fd, buffer, m_size);
 	 //buffer now contains the random data
  }
  // ============== NEW CODE END =============
@@ -213,15 +213,15 @@ UdpClient::Send (void)
   SeqTsHeader seqTs;
   //cout<<m_sent;
   seqTs.SetSeq (m_sent);
-  uint8_t* buffer = new uint8_t[m_size];
+  uint8_t* buffer = new uint8_t[m_size+8+4];
    Ptr<Packet> p;
    //set entropy high and low done  
   if (m_setEntropyValue == true) { //if true
-   createHighEntropy(buffer, m_size);
-    p = Create<Packet> (buffer, 1100+8+4);
+   createHighEntropy(buffer, m_size+8+4);
+    p = Create<Packet> (buffer, m_size+8+4);
   }else{ //false 
-    createLowEntropy(buffer, m_size);
-    p = Create<Packet> (buffer, 1100+8+4);
+    createLowEntropy(buffer, m_size+8+4);
+    p = Create<Packet> (buffer, m_size+8+4);
   }
   //Ptr<Packet> p = Create<Packet> ((uint8_t*) str.str().c_str(), str.str().length() + 1); // 8+4 : the size of the seqTs header
   p->AddHeader (seqTs);

@@ -442,6 +442,7 @@ PointToPointNetDevice::SetReceiveErrorModel (Ptr<ErrorModel> em)
 Ptr<Packet>
 PointToPointNetDevice::UnCompress (Ptr<Packet> p)
 {
+	//cout << p->ToString();
 	int updHeaderSize = 8;
 	  // Remove IPv4 Header
 	  Ipv4Header ipv4Header;
@@ -450,7 +451,6 @@ PointToPointNetDevice::UnCompress (Ptr<Packet> p)
 	  // Remove UDP Header
 	  UdpHeader udpHeader;
 	  p->RemoveHeader(udpHeader);
-
 		uint8_t *newBuffer = new uint8_t[p->GetSize ()];
 		p->CopyData(newBuffer, p->GetSize ());
 		uint32_t size = (((uint32_t) newBuffer[3] << 24) | ((uint32_t) newBuffer[2] << 16) | ((uint32_t) newBuffer[1] << 8) | newBuffer[0]);
@@ -459,16 +459,16 @@ PointToPointNetDevice::UnCompress (Ptr<Packet> p)
 		for(uint32_t i=0; i<len; i++) {
 			buffer[i] = newBuffer[i+4];
 		}
-		uint8_t out[size];
-		uLong outSize = (uLong) size;
-		uncompress((Bytef *)out, &outSize, (Bytef *)buffer, len);
+		uint8_t out[compressBound(size)];
+		uLong outSize = compressBound(size);
+		uncompress((Bytef *)out, &outSize, (Bytef *)buffer, len+8+4);
 	  uint16_t protocol = (((uint16_t) out[0] << 8) | (uint16_t) out[1]);
 	  outSize -= 2;
 	  uint8_t *data = new uint8_t[outSize];
 	  for(uint32_t i=0; i<outSize; i++) {
 	    data[i] = out[i+2];
 	  }
-		p = Create<Packet> ((uint8_t*) data, outSize);
+	  p = Create<Packet> ((uint8_t*) data, outSize);
 	  outSize += updHeaderSize;
 	  udpHeader.ForcePayloadSize(outSize);
 	  p->AddHeader(udpHeader);
@@ -693,8 +693,8 @@ PointToPointNetDevice::Compress (Ptr<Packet> p) {
 	      buffer[i] = dataBuffer[i-2];
 	    }
 	  }
-		uint8_t *out = new uint8_t[(uLong) size];
-		uLongf outSize = (uLongf) size;
+		uint8_t *out = new uint8_t[compressBound(size)];
+		uLongf outSize = compressBound(size);
 	  int res = compress2((uint8_t *)out, &outSize, (uint8_t *)buffer, (uLong) size, Z_BEST_COMPRESSION);
 	  if(res == Z_OK)
 	     cout << "\noutSize: " << outSize << endl;
