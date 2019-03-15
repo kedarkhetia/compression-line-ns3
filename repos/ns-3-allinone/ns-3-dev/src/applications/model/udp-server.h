@@ -86,7 +86,7 @@ protected:
   virtual void DoDispose (void);
 
 private:
-
+  Time diff;
   virtual void StartApplication (void);
   virtual void StopApplication (void);
 

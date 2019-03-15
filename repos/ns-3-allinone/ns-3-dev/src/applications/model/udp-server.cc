@@ -165,21 +165,13 @@ UdpServer::StopApplication ()
     {
       m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
-  cout << "Port: " << m_port << " Delay: " << lastPacket-firstPacket << endl;
-  if ((lastPacket - firstPacket)>100)
-    {
-      cout<<"Compression detected"<<endl;
-    }
-  else
-    {
-      cout<<"No compression was detected"<<endl;
-    }
+  diff = lastPacket - firstPacket;
 }
 
 Time
 UdpServer::GetTimeDiff ()
 {
-	return lastPacket-firstPacket;
+	return diff;
 }
 
 void
