@@ -100,10 +100,11 @@ using namespace ns3;
 	 apps.Stop (Seconds (65.0));
 	 //this is variable for changing entropy high- ture and low- false
 	 uint32_t MaxPacketSize = 1100;
-
+	 Time interPacketInterval = Seconds (0.0);
 	 uint32_t maxPacketCount = 6000;
 	 UdpClientHelper client (interface3.GetAddress(1), 4000);
 	 client.SetAttribute ("MaxPackets", UintegerValue (maxPacketCount));
+	 client.SetAttribute ("Interval", TimeValue (interPacketInterval));
 	 client.SetAttribute ("PacketSize", UintegerValue (MaxPacketSize));
 	 client.SetAttribute("SetEntropy", BooleanValue (false));
 	 apps = client.Install (nodes.Get (0));
@@ -116,6 +117,7 @@ using namespace ns3;
 	 apps.Stop (Seconds (130.0));
      UdpClientHelper client2 (interface3.GetAddress(1), 6000);
 	 client2.SetAttribute ("MaxPackets", UintegerValue (maxPacketCount));
+	 client2.SetAttribute ("Interval", TimeValue (interPacketInterval));
 	 client2.SetAttribute ("PacketSize", UintegerValue (MaxPacketSize));
 	 client2.SetAttribute("SetEntropy", BooleanValue (true));
 	 apps = client2.Install (nodes.Get (0));
