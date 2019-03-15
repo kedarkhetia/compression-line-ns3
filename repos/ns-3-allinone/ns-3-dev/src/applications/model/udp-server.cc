@@ -166,6 +166,14 @@ UdpServer::StopApplication ()
       m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
   cout << "Port: " << m_port << " Delay: " << lastPacket-firstPacket << endl;
+  if ((lastPacket - firstPacket)>100)
+    {
+      cout<<"Compression detected"<<endl;
+    }
+  else
+    {
+      cout<<"No compression was detected"<<endl;
+    }
 }
 
 Time
@@ -210,14 +218,6 @@ UdpServer::HandleRead (Ptr<Socket> socket)
                            " TXtime: " << seqTs.GetTs () <<
                            " RXtime: " << Simulator::Now () <<
                            " Delay: " << Simulator::Now () - seqTs.GetTs ());
-		  if ((Simulator::Now () - seqTs.GetTs ())>100)
-                     {
-                          cout<<"Compression Detected"<<endl;
-                     }
-                 else      
-		     {
-                          cout<<"No compression detected"<<endl;  
-                     }
             }
           else if (Inet6SocketAddress::IsMatchingType (from))
             {
@@ -228,14 +228,6 @@ UdpServer::HandleRead (Ptr<Socket> socket)
                            " TXtime: " << seqTs.GetTs () <<
                            " RXtime: " << Simulator::Now () <<
                            " Delay: " << Simulator::Now () - seqTs.GetTs ());
-		  if ((Simulator::Now () - seqTs.GetTs ())>100)
-                     {
-                          cout<<"Compression Detected"<<endl;
-                     }
-                 else      
-		     {
-                          cout<<"No compression detected"<<endl;  
-                     }
             }
 
           m_lossCounter.NotifyReceived (currentSequenceNumber);
