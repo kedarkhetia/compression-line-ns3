@@ -34,13 +34,12 @@ using namespace ns3;
 	 string capacity = "";
 	 cmd.AddValue("capacity", "Middle Link Capacity", capacity);
 	 cmd.Parse (argc, argv);
-
 	 ConfigStore inputConfig;
 	 inputConfig.ConfigureDefaults ();
 	 Config::SetDefault ("ns3::PointToPointNetDevice::m_protocol", UintegerValue (0x0021));
 	 cmd.Parse (argc, argv);
 
-	 Time::SetResolution (Time::MS);
+	 Time::SetResolution (Time::NS);
 	 //LogComponentEnable ("UdpServer", LOG_LEVEL_INFO);
 	 //LogComponentEnable ("UdpClient", LOG_LEVEL_INFO);
 	 Packet packet;
@@ -100,7 +99,7 @@ using namespace ns3;
 	 apps.Stop (Seconds (65.0));
 	 //this is variable for changing entropy high- ture and low- false
 	 uint32_t MaxPacketSize = 1100;
-	 Time interPacketInterval = Seconds (0.0);
+	 Time interPacketInterval = Seconds (0.001);
 	 uint32_t maxPacketCount = 6000;
 	 UdpClientHelper client (interface3.GetAddress(1), 4000);
 	 client.SetAttribute ("MaxPackets", UintegerValue (maxPacketCount));
@@ -124,18 +123,14 @@ using namespace ns3;
 	 apps.Start (Seconds (68.0));
 	 apps.Stop (Seconds (130.0));
 	 Ptr<UdpServer> udpServer2 = server2.GetServer();
-//	 delay = udpServer->GetTimeDiff();
-//	 cout << "Delay High Entropy: " << delay << endl;
-//	 apps.Start (Seconds (11.0));
-//	 apps.Stop (Seconds (20.0));
 	 Simulator::Run ();
 	 Simulator::Destroy ();
 	 Time delay = udpServer->GetTimeDiff();
-	 cout << "Delay Low Entropy: " << delay << endl;
+	 cout << "Delay Low Entropy: " << delay.GetMilliSeconds() << "ms" << endl;
 	 Time delay2 = udpServer2->GetTimeDiff();
-	 cout << "Delay High Entropy: " << delay2 << endl;
-	 Time deltaLH = delay2 - delay;
-	 if(deltaLH > 100) {
+	 cout << "Delay High Entropy: " << delay2.GetMilliSeconds() << "ms" << endl;
+	 Time deltaLH = (delay2 - delay); // convert nanoseconds to milliseconds
+	 if(deltaLH.GetMilliSeconds() > 100) {
 		 cout << "Compression detected!" << endl;
 	 }
 	 else {
